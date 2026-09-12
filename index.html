@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVM Visualizer</title>
+
+    <style></style>
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <header>
+        <div class="brand">
+            <div class="logo">🖕</div>
+            <div>
+                <h1>Support Vector Machine (Linear Kernel) Visualizer</h1>
+                <p class="subtitle">I am going to kill myself</p>
+            </div>
+        </div>
+        <div class="status" id="status">READY · STEP 0</div>
+    </header>
+
+    <main class="app">
+        <section class="column" id="leftCol">
+            <div class="card">
+                <h2>Data Canvas / Input</h2>
+                <p class="desc">
+                    Click to add points.<br>
+                    <b>Left-click</b> adds a positive class (+1),
+                    <b>Right-click</b> adds a negative class (−1).<br>
+                    Click an existing point to remove it. Use the random generator to create a linearly separable
+                    dataset.
+                </p>
+                <div class="canvas-wrap">
+                    <canvas id="dataCanvas"></canvas>
+                    <div class="canvas-hint"><b>Left-click</b> = add '+1' · <b>Right-click</b> = add '−1' · <b>Click existing point</b> = remove</div>
+                </div>
+                <div class="legend">
+                    <span><i class="dot pos"></i>Positive class (+1)</span>
+                    <span><i class="dot neg"></i>Negative class (−1)</span>
+                    <span id="dataCount">0 points</span>
+                </div>
+                <div class="toolbar">
+                    <button class="primary" id="randomBtn">Generate Random Data</button>
+                    <button id="clearBtn" class="danger">Clear Data</button>
+                    <button id="separableBtn">Make Separable</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Hyperparameters & Controls</h2>
+                <p class="desc">The simplified teaching implementation uses the hinge-loss objective and gradient
+                    descent. Change the parameters, then run one step or play until the model stabilizes.</p>
+                <div class="controls">
+                    <div class="control">
+                        <label>Learning rate <span class="value" id="lrVal">0.050</span></label>
+                        <input id="lr" type="range" min="0.005" max="0.2" step="0.005" value="0.05">
+                    </div>
+                    <div class="control">
+                        <label>Regularization C <span class="value" id="cVal">1.00</span></label>
+                        <input id="c" type="range" min="0.1" max="5" step="0.1" value="1">
+                    </div>
+                    <div class="control">
+                        <label>Epochs / play limit <span class="value" id="epochVal">60</span></label>
+                        <input id="epochs" type="range" min="10" max="200" step="10" value="60">
+                    </div>
+                    <div class="control">
+                        <label>Kernel <span class="value">Linear</span></label>
+                        <select disabled>
+                            <option>Linear Kernel: K(x,z) = x · z</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="formula" style="margin-top:12px">
+                    <b>Objective:</b> ½||w||² + C Σ max(0, 1 − yᵢ(w·xᵢ + b))<br>
+                    <b>Decision rule:</b> sign(w·x + b) &nbsp; | &nbsp; <b>Margin:</b> 2 / ||w||
+                </div>
+                <div class="actions">
+                    <button class="primary" id="stepBtn">▶ Step-by-step Execution</button>
+                    <button id="playBtn">▶▶ Play until Convergence</button>
+                </div>
+                <div class="progress"><i id="progress"></i></div>
+            </div>
+
+            <div class="card">
+                <h2>How the Mathematics Works</h2>
+                <p class="desc">Each training step asks a simple question: is this point safely on the correct side of
+                    the margin?</p>
+                <div class="grid2">
+                    <div class="stat"><span>Hinge loss</span><b>max(0, 1 − y·f(x))</b></div>
+                    <div class="stat"><span>Score</span><b>f(x) = w·x + b</b></div>
+                    <div class="stat"><span>Support vector</span><b>y·f(x) ≤ 1</b></div>
+                    <div class="stat"><span>Target</span><b>Large margin + low loss</b></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="column" id="rightCol">
+            <div class="card">
+                <div class="step-title">
+                    <div>
+                        <h2>Model State / Structure</h2>
+                        <p class="desc" style="margin-bottom:0">Watch the internal values change after every
+                            optimization step.</p>
+                    </div><span class="badge" id="epochBadge">Epoch 0</span>
+                </div>
+                <div class="grid2">
+                    <div class="stat"><span>Weight w₁</span><b id="w1">0.0000</b></div>
+                    <div class="stat"><span>Weight w₂</span><b id="w2">0.0000</b></div>
+                    <div class="stat"><span>Bias b</span><b id="bias">0.0000</b></div>
+                    <div class="stat"><span>Margin width</span><b id="margin">∞</b></div>
+                </div>
+                <p class="explain" id="stateText">Start with random data, then execute a step. Points that violate the
+                    margin contribute to the gradient; correctly classified points outside the margin contribute only
+                    regularization.</p>
+
+                <h3 style="font-size:11px;margin:16px 0 7px;color:#cbd5e1">Training Matrix X / Labels y</h3>
+                <div class="matrix" id="matrix"></div>
+
+                <h3 style="font-size:11px;margin:16px 0 7px;color:#cbd5e1">Weight Vector</h3>
+                <div class="vector">
+                    <span class="vecbox">w = [<span id="vw1">0</span>, <span id="vw2">0</span>]</span>
+                    <span class="arrow">→</span>
+                    <span class="vecbox">b = <span id="vb">0</span></span>
+                    <span class="arrow">→</span>
+                    <span class="vecbox">f(x) = w·x + b</span>
+                </div>
+
+                <h3 style="font-size:11px;margin:16px 0 7px;color:#cbd5e1">Current Optimization Terms</h3>
+                <div class="grid2">
+                    <div class="stat"><span>Total loss</span><b id="loss">0.0000</b></div>
+                    <div class="stat"><span>Margin violations</span><b id="violations">0</b></div>
+                    <div class="stat"><span>Support vectors</span><b id="svs">0</b></div>
+                    <div class="stat"><span>Accuracy</span><b id="accuracy">0%</b></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="step-title">
+                    <div>
+                        <h2>Loss Graph</h2>
+                        <p class="desc" style="margin-bottom:0">The objective should generally decrease as the model
+                            learns.</p>
+                    </div><span class="badge">Hinge + L2</span>
+                </div>
+                <div class="canvas-wrap" style="border:0;background:#080b10">
+                    <canvas id="lossCanvas"></canvas>
+                </div>
+                <p class="explain"><b>Reading the graph:</b> a downward trend means the model is finding weights that
+                    better satisfy the margin constraints. A small amount of oscillation can occur when the learning
+                    rate is large.</p>
+            </div>
+
+            <div class="card">
+                <h2>Step Summary</h2>
+                <p class="desc" id="stepSummary">No optimization step has been executed yet.</p>
+                <div class="formula" id="gradientBox">Gradient: ∇w = 0, ∇b = 0</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="members">
+            <span class="member">66010328 ธนบดี ธนสารผดุงกิจ</span>
+            <span class="member">66010358 ธรรมธร ธนะสมานโชค</span>
+            <span class="member">66010544 พศุตม์ ศิริวรรณ</span>
+            <span class="member">66010587 พีรพัฒน์ คำสิงห์</span>
+            <span class="member">66010632 ภูกวิน ศรีรุ่งเรืองชัย</span>
+            <span class="member">66010704 รัฐภูมิ แก่นเมือง</span>
+        </div>
+        <div class="ce">CE KMITL</div>
+    </footer>
+
+    <script src="index.js"></script>
+</body>
+
+</html>

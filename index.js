@@ -6,9 +6,12 @@
 
   let points = [];
   let model = {w1: 0, w2: 0, b: 0, epoch: 0};
+  let modelhistory = [];
   let losses = [];
   let running = false;
   let timer = null;
+
+  let playing = false;
 
   const $ = id => document.getElementById(id);
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -119,17 +122,55 @@
   function step(){
     if(!points.length) { randomData(); return }
 
-    const t=lossAndTerms(),lr=getLR();
+    const t = lossAndTerms(), lr = getLR();
 
-    model.w1-=lr*t.gw;model.w2-=lr*t.gh;model.b-=lr*t.gb;model.epoch++;
+    modelhistory.push({
+      w1: model.w1,
+      w2: model.w2,
+      b: model.b,
+      epoch: model.epoch});
 
-    const after=lossAndTerms();losses.push(after.loss);
-    $('stepSummary').textContent=`Step ${model.epoch}: ${t.violations} point(s) violate or touch the margin. The gradient moves w and b to reduce hinge loss while L2 regularization keeps the weight vector controlled.`;
+    model.w1 -= lr * t.gw;
+    model.w2 -= lr * t.gh;
+    model.b -= lr * t.gb;
+    model.epoch++;
+
+    const after = lossAndTerms();
+    losses.push(after.loss);
+    $('stepSummary').textContent =`Step ${model.epoch}: ${t.violations} point(s) violate or touch the margin. The gradient moves w and b to reduce hinge loss while L2 regularization keeps the weight vector controlled.`;
     $('gradientBox').innerHTML=`Gradient before update: ∇w = [${t.gw.toFixed(4)}, ${t.gh.toFixed(4)}], ∇b = ${t.gb.toFixed(4)}<br>Update: θ ← θ − η∇θ &nbsp; with &nbsp; η = ${lr.toFixed(3)}`;
     $('stateText').textContent=after.violations===0
       ? 'All training points satisfy the margin constraint. The model has reached a stable separating solution for this dataset.'
       : `The model is still correcting ${after.violations} margin violation(s). Highlighted rings identify points at or inside the margin — the support-vector region.`;
+    
     updateUI(after);
+
+    return after;
+  }
+
+  function backstep() {
+     if(!points.length) { randomData(); return }
+     if(model.epoch <= 0) return;
+
+     const t = lossAndTerms(), lr = getLR();
+
+    const last = modelhistory.pop();
+
+    model.w1 = last.w1;
+    model.w2 = last.w2;
+    model.b = last.b;
+    model.epoch = last.epoch;
+
+    const after = lossAndTerms();
+    losses.push(after.loss);
+    $('stepSummary').textContent =`Step ${model.epoch}: ${t.violations} point(s) violate or touch the margin. The gradient moves w and b to reduce hinge loss while L2 regularization keeps the weight vector controlled.`;
+    $('gradientBox').innerHTML=`Gradient before update: ∇w = [${t.gw.toFixed(4)}, ${t.gh.toFixed(4)}], ∇b = ${t.gb.toFixed(4)}<br>Update: θ ← θ − η∇θ &nbsp; with &nbsp; η = ${lr.toFixed(3)}`;
+    $('stateText').textContent=after.violations===0
+      ? 'All training points satisfy the margin constraint. The model has reached a stable separating solution for this dataset.'
+      : `The model is still correcting ${after.violations} margin violation(s). Highlighted rings identify points at or inside the margin — the support-vector region.`;
+    
+    updateUI(after);
+
     return after;
   }
 
@@ -158,6 +199,13 @@
   }
   function resetModel(){model={w1:0,w2:0,b:0,epoch:0};losses=[];running=false;clearInterval(timer);timer=null;$('progress').style.width='0%';}
   function play(){
+    if (playing) {
+      playing = false;
+      $('playBtn').textContent='▶▶ Play';
+    } else {
+      playing = true;
+      $('playBtn').textContent='⏸ Pause';
+    }
     if(running){running=false;clearInterval(timer);$('status').textContent=`READY · STEP ${model.epoch}`;return}
     if(!points.length)randomData();
     running=true;$('status').textContent='TRAINING · RUNNING';
@@ -178,6 +226,7 @@
   $('clearBtn').onclick=()=>{points=[];resetModel();updateUI(lossAndTerms())};
   $('separableBtn').onclick=()=>makeSeparable();
   $('stepBtn').onclick=()=>{if(running) return;step()};
+  $('backBtn').onclick=()=>{if(running) return;backstep()};
   $('playBtn').onclick=()=>play();
 
   $('lr').oninput=e=>$('lrVal').textContent=(+e.target.value).toFixed(3);

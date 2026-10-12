@@ -47,6 +47,12 @@
                     <button id="clearBtn" class="danger">Clear Data</button>
                     <button id="separableBtn">Make Separable</button>
                 </div>
+                <div class="actions">
+                    <button class="primary" id="backBtn">◀ Backward</button>
+                    <button id="playBtn">▶▶ Play</button>
+                    <button class="primary" id="stepBtn">▶ Forward</button>
+                </div>
+                <div class="progress"><i id="progress"></i></div>
             </div>
 
             <div class="card">
@@ -77,11 +83,6 @@
                     <b>Objective:</b> ½||w||² + C Σ max(0, 1 − yᵢ(w·xᵢ + b))<br>
                     <b>Decision rule:</b> sign(w·x + b) &nbsp; | &nbsp; <b>Margin:</b> 2 / ||w||
                 </div>
-                <div class="actions">
-                    <button class="primary" id="stepBtn">▶ Step-by-step Execution</button>
-                    <button id="playBtn">▶▶ Play until Convergence</button>
-                </div>
-                <div class="progress"><i id="progress"></i></div>
             </div>
 
             <div class="card">

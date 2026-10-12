@@ -5,13 +5,13 @@
   const lctx = lossCanvas.getContext('2d');
 
   let points = [];
-  let model = {w1:0,w2:0,b:0,epoch:0};
+  let model = {w1: 0, w2: 0, b: 0, epoch: 0};
   let losses = [];
   let running = false;
   let timer = null;
 
   const $ = id => document.getElementById(id);
-  const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
   function resizeCanvas(c, ctx){
     const r = c.getBoundingClientRect(), dpr = devicePixelRatio || 1;
@@ -117,9 +117,12 @@
   }
 
   function step(){
-    if(!points.length){randomData();return}
+    if(!points.length) { randomData(); return }
+
     const t=lossAndTerms(),lr=getLR();
+
     model.w1-=lr*t.gw;model.w2-=lr*t.gh;model.b-=lr*t.gb;model.epoch++;
+
     const after=lossAndTerms();losses.push(after.loss);
     $('stepSummary').textContent=`Step ${model.epoch}: ${t.violations} point(s) violate or touch the margin. The gradient moves w and b to reduce hinge loss while L2 regularization keeps the weight vector controlled.`;
     $('gradientBox').innerHTML=`Gradient before update: ∇w = [${t.gw.toFixed(4)}, ${t.gh.toFixed(4)}], ∇b = ${t.gb.toFixed(4)}<br>Update: θ ← θ − η∇θ &nbsp; with &nbsp; η = ${lr.toFixed(3)}`;
@@ -130,10 +133,16 @@
     return after;
   }
 
-  function randomData(n=18){
-    points=[];
-    for(let i=0;i<n/2;i++){points.push({x:-.55+Math.random()*.65,y:-.72+Math.random()*.62,yLabel:-1})}
-    for(let i=0;i<n/2;i++){points.push({x:.05+Math.random()*.65,y:.08+Math.random()*.62,yLabel:1})}
+  function randomData(n=18) {
+    points = [];
+    for (let i=0; i<n/2; i++) {
+      points.push(
+        {x:(Math.random()*2)-1, 
+          y:(Math.random()*2)-1,
+          yLabel:-1
+        });
+    }
+    for(let i=0;i<n/2;i++){points.push({x:(Math.random()*2)-1,y:(Math.random()*2)-1,yLabel:1})}
     resetModel(); drawData(); updateUI(lossAndTerms());
   }
   function makeSeparable(){

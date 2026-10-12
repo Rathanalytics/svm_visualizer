@@ -121,6 +121,7 @@
 
   function step(){
     if(!points.length) { randomData(); return }
+    if(model.epoch >= +$('epochs').value) return;
 
     const t = lossAndTerms(), lr = getLR();
 
@@ -199,9 +200,14 @@
   }
   function resetModel(){model={w1:0,w2:0,b:0,epoch:0};losses=[];running=false;clearInterval(timer);timer=null;$('progress').style.width='0%';}
   function play(){
+    if (model.epoch >= +$('epochs').value) {
+      playing = false;
+      $('playBtn').textContent='◼ Converged';
+      return;
+    }
     if (playing) {
       playing = false;
-      $('playBtn').textContent='▶▶ Play';
+      $('playBtn').textContent='▶▶ Play Until Convergence';
     } else {
       playing = true;
       $('playBtn').textContent='⏸ Pause';
